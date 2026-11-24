@@ -23,7 +23,8 @@ TMP = Path(tempfile.mkdtemp()); BIN = TMP / "webkit_run"
 subprocess.run(["swiftc", "-O", str(Path(__file__).resolve().parent / "webkit_run.swift"), "-o", str(BIN)], capture_output=True, text=True)
 if not BIN.exists(): print("ОШИБКА: не удалось собрать раннер WebKit"); sys.exit(1)
 if SHOTS: SHOTS.mkdir(parents=True, exist_ok=True)
-srv, BASE = pages_server.start(ROOT)
+LIVE = args[args.index("--url") + 1].rstrip("/") + "/" if "--url" in args else None   # --url АДРЕС: проверить уже опубликованный сайт вместо локального сервера
+srv, BASE = (None, LIVE) if LIVE else pages_server.start(ROOT)
 PREFIX = BASE[BASE.index("/", 8):]          # /kafe-bistro/
 errors, checks = [], 0
 def expect(cond, msg):
@@ -135,7 +136,7 @@ try:
         check_viewport(1280, 900, "desktop")
 except (KeyError, TypeError, IndexError, AttributeError) as e:
     errors.append(f"сценарий вернул неполные данные: {type(e).__name__}: {e}")
-srv.shutdown()
+if srv: srv.shutdown()
 print(f"Проверок аудита (WebKit): {checks}" + (f"; скриншоты: {SHOTS}" if SHOTS else ""))
 for e in errors: print("ОШИБКА:", e)
 print("ИТОГ:", "аудит страниц пройден" if not errors else f"ошибок: {len(errors)}")
